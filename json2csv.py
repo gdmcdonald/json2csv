@@ -1,15 +1,56 @@
+#--
+# json2csv version 0.2
+# Description: This script converts compressed json .json.gz files into
+# compressed csv .csv.gz files
+#
+# Example usage:
+# >python  json2csv.py mybigfile.json.gz 1000000
+# converts the gzipped json file "mybigfile.json.gz" into multiple gzipped csv files of length 1000000 rows
+#
+# Caveat: to avoid random column order, field names are hardcoded below.
+#
+# Author: Gordon McDonald
+# gordon.mcdonald@sydney.edu.au
+#
+# Date last modified: 5/Apr/2019
+#
+# If you use this script towards a publication, please acknowledge the
+# Sydney Informatics Hub.
+#
+# Suggested acknowledgement:
+# “This research was supported by the Sydney Informatics Hub, a Core Research Facility of the University of Sydney.”
+#--
+
+
+
 import csv
 import gzip
 import time
+import sys
+from pathlib import Path
 
 #input .json.gz file, in the same folder as this python script.
-inputFileName='reviews_Electronics_5.json.gz'
+inputFileName=sys.argv[1]
 
 #remove last 8 charachters (".json.gz") to get file name without extentions
-fileNameRoot=inputFileName[:-8]
+fileNameRoot=Path(inputFileName).stem
 
 #max lines to output in a single csv file
-linesPerOutputFile=3000000
+if (len(sys.argv)>2):
+    linesPerOutputFile= int(sys.argv[2])
+else:
+    linesPerOutputFile=1000000
+
+#hardcoded field names.....sob
+fieldnames=['reviewTime',
+             'overall',
+             'reviewerID',
+             'reviewerName',
+             'unixReviewTime',
+             'asin',
+             'reviewText',
+             'summary',
+             'helpful']
 
 #initialize the output file number at zero
 fileNumber=0
@@ -30,28 +71,17 @@ with gzip.open (inputFileName,'r') as jsonfile:
     #print(str(t1-t0)+" seconds")
     print(str(totalLinesInInputFile)+" lines to convert to csv.")
 
-fieldnames=['reviewTime',
-             'overall',
-             'reviewerID',
-             'reviewerName',
-             'unixReviewTime',
-             'asin',
-             'reviewText',
-             'summary',
-             'helpful']
-
-
 
 #convert to multiple csv files on second pass
 with gzip.open (inputFileName,'r') as jsonfile:
 
     while 1 == 1:
         fileNumber += 1
-        outputFileName = inputFileName + '_output' + str(fileNumber) + '.csv'
+        outputFileName = fileNameRoot + str(fileNumber) + '.csv.gz'
         countOfLinesInThisFile = 0
         linesDoneSoFar = countOfLinesInThisFile + (fileNumber - 1) * linesPerOutputFile
         if linesDoneSoFar < totalLinesInInputFile:
-            with open(outputFileName, 'w') as csvfile:
+            with gzip.open(outputFileName, 'wt') as csvfile:
                 OutputCsvFileWriter = csv.DictWriter(csvfile,
                                             fieldnames=fieldnames)
                 OutputCsvFileWriter.writeheader()
